@@ -9,13 +9,42 @@ pnpm install
 pnpm dev
 ```
 
-## Core Features
+## Features
 
-- **Organizations & Teams** — Users belong to orgs, orgs have teams
-- **Retrospectives** — Team retro sessions using templates (4Ls, Start-Stop-Continue, etc.)
-- **Cards & Voting** — Anonymous/named feedback cards with voting
-- **Templates** — Customizable retro formats with columns and prompts
-- **Dashboard** — View latest retros, team members, reports
+### 🔐 Authentication & User Management
+- **Email/Password Authentication** — Secure sign-up and sign-in with Better Auth
+- **User Approval Workflow** — Admin approval required for new users (first user becomes admin automatically)
+- **User Roles** — Admin and member roles with different permissions
+- **User Status** — Pending, approved, rejected, and suspended states
+- **DiceBear Avatars** — Unique auto-generated avatars for all users using DiceBear's HTTP API
+- **Admin Dashboard** — Manage users, approve/reject registrations, view activity
+
+### 🏢 Organizations & Teams
+- **Organizations** — Create and manage organizations with multiple teams
+- **Team Management** — Create teams, invite members, manage roles (owner, admin, lead, member)
+- **Join Requests** — Request to join teams with approval workflow
+- **Team Emojis** — Customizable team identifiers with emoji support
+
+### 📋 Retrospectives
+- **Template-Based Retros** — Start retros using built-in or custom templates
+- **Multi-Phase Sessions** — Guided flow through collecting, voting, and discussing phases
+- **Session Timer** — Configurable countdown timer for time-boxed discussions
+- **Anonymous Cards** — Option for anonymous feedback submission
+- **Card Comments** — Discuss individual cards with threaded comments
+
+### 🗳️ Voting System
+- **Multiple Vote Types** — Choose from:
+  - **Multi-Vote** — Each participant gets multiple votes to distribute
+  - **Single Vote** — One vote per card per participant
+  - **Dot Voting** — Allocate a pool of votes across cards
+- **Configurable Vote Limits** — Set maximum votes per person
+- **Real-time Vote Counts** — See voting results as they happen
+
+### 🎨 User Experience
+- **Dark/Light/System Theme** — Responsive theme toggle with system preference detection
+- **Responsive Design** — Works on desktop and mobile devices
+- **Collapsible Sidebar** — Clean navigation with organizations and teams tree
+- **Profile Management** — Update name, bio, and view account details
 
 ## Built-in Templates
 
@@ -58,14 +87,56 @@ pnpm dev          # Dev server on port 3000
 pnpm build        # Production build
 pnpm test         # Vitest tests
 pnpm check        # Biome lint + format
+npx drizzle-kit push   # Push schema changes to SQLite
+npx drizzle-kit generate  # Generate migrations
 ```
 
 ### Tech Stack
 
 - **Framework**: TanStack Start (React 19, SSR, file-based routing)
-- **Database**: Drizzle ORM + SQLite
-- **Auth**: Better Auth (email/password)
-- **Styling**: Tailwind CSS v4 + Shadcn UI
+- **Data Fetching**: TanStack Query for mutations, route loaders for reads
+- **Database**: Drizzle ORM + SQLite (libsql)
+- **Auth**: Better Auth (email/password, multi-session support)
+- **Styling**: Tailwind CSS v4 + Shadcn UI (new-york style)
+- **Avatars**: DiceBear HTTP API (thumbs style)
+- **Build**: Vite 7 + React Compiler
+
+### Project Structure
+
+```
+src/
+├── components/       # Shared React components
+│   ├── ui/           # Shadcn UI components
+│   ├── Header.tsx    # App header
+│   ├── UserAvatar.tsx # Avatar component with DiceBear fallback
+│   └── app-sidebar.tsx # Main navigation sidebar
+├── db/               # Database layer
+│   ├── index.ts      # Drizzle client (lazy initialization)
+│   └── schema.ts     # Table definitions
+├── hooks/            # Custom React hooks
+├── lib/              # Utilities and API functions
+│   ├── api/          # Server functions (users, teams, orgs, retros)
+│   ├── auth.ts       # Better Auth server config
+│   ├── auth-client.ts # Better Auth client hooks
+│   ├── avatar.ts     # DiceBear avatar URL generator
+│   └── utils.ts      # Utility functions
+├── routes/           # File-based routes
+│   ├── admin/        # Admin pages
+│   ├── organizations/ # Organization pages
+│   ├── retros/       # Retrospective pages
+│   └── teams/        # Team pages
+└── styles.css        # Tailwind entry point
+```
+
+---
+
+## Retro Session Flow
+
+1. **Create Retro** — Select a team and template, configure timer and voting options
+2. **Collecting Phase** — Participants add cards to columns (optionally anonymous)
+3. **Voting Phase** — Team votes on cards to prioritize discussion topics
+4. **Discussing Phase** — Review top-voted cards, add comments, create action items
+5. **Completed** — Archive the retro for future reference
 
 ---
 
