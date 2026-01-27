@@ -1,4 +1,77 @@
-Creating a retro app (short for retrospective app) can be an excellent tool for teams to reflect on their past work, identify areas of improvement, and drive better collaboration in future sprints or projects. Below are some key insights for developing a successful retro app:
+# jrs-retro
+
+A retrospective app for teams to reflect on sprints/projects, share feedback, vote on priorities, and track action items.
+
+## Getting Started
+
+```bash
+pnpm install
+pnpm dev
+```
+
+## Core Features
+
+- **Organizations & Teams** — Users belong to orgs, orgs have teams
+- **Retrospectives** — Team retro sessions using templates (4Ls, Start-Stop-Continue, etc.)
+- **Cards & Voting** — Anonymous/named feedback cards with voting
+- **Templates** — Customizable retro formats with columns and prompts
+- **Dashboard** — View latest retros, team members, reports
+
+## Built-in Templates
+
+### 4Ls
+Four simple words to dig into both positive and negative aspects of your last Sprint.
+
+| Column | Prompt |
+|--------|--------|
+| Liked ❤️ | Things you really enjoyed |
+| Learned 📚 | Things you have learned |
+| Lacked ⚠️ | Things the team missed |
+| Longed For 🌟 | Something you wished for |
+
+### Appreciation Game
+A short activity based on the good things your team members did! Reinforce your team's relationship hence its velocity.
+
+| Column | Prompt |
+|--------|--------|
+| Team Spirit 🤝 | You really served the team when… |
+| Ideas 💡 | What I would like to see more of |
+
+### Cupid's Retrospective
+Spread the love at your retrospective! Strengthen bonds and accentuate recognition within the team.
+
+| Column | Prompt |
+|--------|--------|
+| Self-love 💜 | Tell us how you made a difference |
+| Good Stuff! 👍 | What did you like about the last Sprint/project? |
+| My Wishes 🌠 | What are your wishes for the team? |
+| A Team to Die For 💕 | Share sweet words about your teammates |
+
+---
+
+## Development
+
+### Commands
+
+```bash
+pnpm dev          # Dev server on port 3000
+pnpm build        # Production build
+pnpm test         # Vitest tests
+pnpm check        # Biome lint + format
+```
+
+### Tech Stack
+
+- **Framework**: TanStack Start (React 19, SSR, file-based routing)
+- **Database**: Drizzle ORM + SQLite
+- **Auth**: Better Auth (email/password)
+- **Styling**: Tailwind CSS v4 + Shadcn UI
+
+---
+
+## Design Insights
+
+Below are key insights for developing a successful retro app:
 
 ### Key Features:
 
@@ -86,3 +159,7 @@ Creating a retro app (short for retrospective app) can be an excellent tool for 
 * Review the previous action items from the last retro, checking if they were completed or need to be carried over.
 
 With these insights, you can build a robust and user-friendly retro app that not only enhances team collaboration but also drives continuous improvement through actionable insights from each retrospective.
+
+## License
+
+MIT

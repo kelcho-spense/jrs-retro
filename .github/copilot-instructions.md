@@ -1,5 +1,64 @@
 # Copilot Instructions for jrs-retro
 
+## What We're Building
+
+**jrs-retro** is a retrospective app for teams to reflect on sprints/projects, share feedback, vote on priorities, and track action items.
+
+### Core Features
+- **Organizations & Teams** — Users belong to orgs, orgs have teams
+- **Retrospectives** — Team retro sessions using templates (4Ls, Start-Stop-Continue, etc.)
+- **Cards & Voting** — Anonymous/named feedback cards with voting
+- **Templates** — Customizable retro formats with columns and prompts
+- **Dashboard** — View latest retros, team members, reports
+
+### Key Entities
+| Entity | Description |
+|--------|-------------|
+| Organization | Top-level container (company) |
+| Team | Group of users within an org |
+| User | Profile, org membership, team membership |
+| Retrospective | Retro session tied to a team + template |
+| Template | Defines columns/prompts (4Ls, etc.) |
+| Card | User feedback in a retro column |
+| Vote | User's vote on a card |
+
+### UI Structure
+- **Sidebar**: Dashboard, Retrospectives (Templates, Reports), My Team, Settings
+- **Dashboard**: Latest retros grid
+- **Retro View**: Team name, participants, columns with cards, voting
+
+### Built-in Templates
+
+#### 4Ls
+Four simple words to dig into both positive and negative aspects of your last Sprint.
+
+| Column | Prompt |
+|--------|--------|
+| Liked ❤️ | Things you really enjoyed |
+| Learned 📚 | Things you have learned |
+| Lacked ⚠️ | Things the team missed |
+| Longed For 🌟 | Something you wished for |
+
+#### Appreciation Game
+A short activity based on the good things your team members did! Reinforce your team's relationship hence its velocity.
+
+| Column | Prompt |
+|--------|--------|
+| Team Spirit 🤝 | You really served the team when… |
+| Ideas 💡 | What I would like to see more of |
+
+#### Cupid's Retrospective
+Spread the love at your retrospective! Strengthen bonds and accentuate recognition within the team.
+
+| Column | Prompt |
+|--------|--------|
+| Self-love 💜 | Tell us how you made a difference |
+| Good Stuff! 👍 | What did you like about the last Sprint/project? |
+| My Wishes 🌠 | What are your wishes for the team? |
+| A Team to Die For 💕 | Share sweet words about your teammates |
+
+---
+
 ## Architecture Overview
 
 **TanStack Start** full-stack React 19 app with SSR, file-based routing, and Nitro server runtime.
