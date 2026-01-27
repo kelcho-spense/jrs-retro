@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { Clock, XCircle, Eye, EyeOff } from "lucide-react"
 
@@ -21,6 +21,7 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignInPage() {
 	const navigate = useNavigate()
+	const router = useRouter()
 	const [email, setEmail] = useState("")
 	const [password, setPassword] = useState("")
 	const [showPassword, setShowPassword] = useState(false)
@@ -66,7 +67,8 @@ function SignInPage() {
 					return
 				}
 
-				// User is approved, proceed to dashboard
+				// User is approved, invalidate router cache and proceed to dashboard
+				await router.invalidate()
 				navigate({ to: "/" })
 			}
 		} catch {

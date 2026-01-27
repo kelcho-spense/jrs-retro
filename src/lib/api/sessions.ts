@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start"
-import { getRequest } from "@tanstack/react-start/server"
 import { z } from "zod"
 import { db } from "@/db"
 import { session } from "@/db/schema"
@@ -8,6 +7,7 @@ import { auth } from "@/lib/auth"
 
 // Get the current user's session from request headers
 async function getSessionFromRequest() {
+	const { getRequest } = await import("@tanstack/react-start/server")
 	const request = getRequest()
 	const sessionResult = await auth.api.getSession({ headers: request.headers })
 	return sessionResult

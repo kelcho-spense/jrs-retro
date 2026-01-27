@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start"
-import { getRequest } from "@tanstack/react-start/server"
 import { z } from "zod"
 import { db } from "@/db"
 import { user, adminActionLog, organizationMember, teamMember } from "@/db/schema"
@@ -11,7 +10,8 @@ import { nanoid } from "nanoid"
 // Helper: Get current session user
 // ============================================================================
 
-async function getSessionUser() {
+export async function getSessionUser() {
+	const { getRequest } = await import("@tanstack/react-start/server")
 	const request = getRequest()
 	const session = await auth.api.getSession({ headers: request.headers })
 	return session?.user ?? null
@@ -52,6 +52,7 @@ async function logAdminAction(
  */
 export const getCurrentUser = createServerFn({ method: "GET" }).handler(
 	async () => {
+		const { getRequest } = await import("@tanstack/react-start/server")
 		const request = getRequest()
 		const session = await auth.api.getSession({ headers: request.headers })
 
@@ -194,6 +195,7 @@ const updateProfileSchema = z.object({
 export const updateProfile = createServerFn({ method: "POST" })
 	.inputValidator((data: unknown) => updateProfileSchema.parse(data))
 	.handler(async ({ data }) => {
+		const { getRequest } = await import("@tanstack/react-start/server")
 		const request = getRequest()
 		const session = await auth.api.getSession({ headers: request.headers })
 
@@ -482,6 +484,7 @@ export const checkAdminExists = createServerFn({ method: "GET" }).handler(
  */
 export const bootstrapFirstAdmin = createServerFn({ method: "POST" }).handler(
 	async () => {
+		const { getRequest } = await import("@tanstack/react-start/server")
 		const request = getRequest()
 		const session = await auth.api.getSession({ headers: request.headers })
 

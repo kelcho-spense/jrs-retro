@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start"
-import { getRequest } from "@tanstack/react-start/server"
 import { z } from "zod"
 import { db } from "@/db"
 import { organization, organizationMember, team, teamMember, user } from "@/db/schema"
@@ -12,6 +11,7 @@ import { nanoid } from "nanoid"
 // ============================================================================
 
 async function getSessionUser() {
+	const { getRequest } = await import("@tanstack/react-start/server")
 	const request = getRequest()
 	const session = await auth.api.getSession({ headers: request.headers })
 	return session?.user ?? null

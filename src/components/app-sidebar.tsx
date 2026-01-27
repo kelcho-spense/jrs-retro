@@ -126,11 +126,20 @@ const adminNavItems = [
 
 function ThemeToggle() {
 	const { theme, setTheme } = useTheme()
+	const [mounted, setMounted] = useState(false)
+
+	// Avoid hydration mismatch by only showing selected state after mount
+	useEffect(() => {
+		setMounted(true)
+	}, [])
+
+	// Always use a controlled value - default to "system" during SSR to match initial state
+	const currentValue = mounted ? theme : "system"
 
 	return (
 		<ToggleGroup
 			type="single"
-			value={theme}
+			value={currentValue}
 			onValueChange={(value) => {
 				if (value) setTheme(value as "light" | "dark" | "system")
 			}}
