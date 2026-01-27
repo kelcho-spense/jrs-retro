@@ -17,6 +17,15 @@ async function getSessionUser() {
 	return session?.user ?? null
 }
 
+async function getFullSessionUser() {
+	const sessionUser = await getSessionUser()
+	if (!sessionUser) return null
+	
+	return db.query.user.findFirst({
+		where: eq(user.id, sessionUser.id),
+	})
+}
+
 // ============================================================================
 // Organization Functions
 // ============================================================================
@@ -104,7 +113,7 @@ export const getOrganization = createServerFn({ method: "GET" })
 	})
 
 /**
- * Create a new organization
+ * Create a new organization (Admin only)
  */
 const createOrgSchema = z.object({
 	name: z.string().min(1).max(100),
@@ -114,9 +123,14 @@ const createOrgSchema = z.object({
 export const createOrganization = createServerFn({ method: "POST" })
 	.inputValidator((data: unknown) => createOrgSchema.parse(data))
 	.handler(async ({ data }) => {
-		const sessionUser = await getSessionUser()
-		if (!sessionUser) {
+		const fullUser = await getFullSessionUser()
+		if (!fullUser) {
 			throw new Error("Unauthorized")
+		}
+
+		// Only system admins can create organizations
+		if (fullUser.role !== "admin") {
+			throw new Error("Only administrators can create organizations")
 		}
 
 		// Check if slug is available
@@ -135,14 +149,14 @@ export const createOrganization = createServerFn({ method: "POST" })
 			id: orgId,
 			name: data.name,
 			slug: data.slug,
-			ownerId: sessionUser.id,
+			ownerId: fullUser.id,
 		})
 
 		// Add creator as owner
 		await db.insert(organizationMember).values({
 			id: nanoid(),
 			organizationId: orgId,
-			userId: sessionUser.id,
+			userId: fullUser.id,
 			role: "owner",
 		})
 

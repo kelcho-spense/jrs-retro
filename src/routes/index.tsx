@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router"
-import { Plus, History, Users, MessageSquare, ThumbsUp } from "lucide-react"
+import { Plus, History, Users, MessageSquare, ThumbsUp, Building2, ChevronRight, Star } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -9,8 +9,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { getRecentRetros, getDashboardStats } from "@/lib/api/retros"
 import { getCurrentUser } from "@/lib/api/users"
+import { getMyOrganizations } from "@/lib/api/organizations"
+import { getMyTeams } from "@/lib/api/teams"
 
 export const Route = createFileRoute("/")({
 	beforeLoad: async () => {
@@ -35,17 +39,19 @@ export const Route = createFileRoute("/")({
 		return { user }
 	},
 	loader: async () => {
-		const [retros, stats] = await Promise.all([
+		const [retros, stats, organizations, teams] = await Promise.all([
 			getRecentRetros(),
 			getDashboardStats(),
+			getMyOrganizations(),
+			getMyTeams(),
 		])
-		return { retros, stats }
+		return { retros, stats, organizations, teams }
 	},
 	component: DashboardPage,
 })
 
 function DashboardPage() {
-	const { retros, stats } = Route.useLoaderData()
+	const { retros, stats, organizations, teams } = Route.useLoaderData()
 
 	return (
 		<div className="space-y-8">
@@ -116,6 +122,91 @@ function DashboardPage() {
 					</CardContent>
 				</Card>
 			</div>
+
+			{/* My Teams */}
+			{teams.length > 0 && (
+				<div>
+					<div className="flex items-center justify-between mb-4">
+						<h2 className="text-xl font-semibold">My Teams</h2>
+						<Button variant="outline" size="sm" asChild>
+							<Link to="/team">View all</Link>
+						</Button>
+					</div>
+					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+						{teams.slice(0, 6).map((team) => (
+							<Link
+								key={team.id}
+								to="/teams/$teamId"
+								params={{ teamId: team.id }}
+							>
+								<Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+									<CardContent className="p-4">
+										<div className="flex items-center gap-3">
+											<span className="text-2xl">{team.emoji}</span>
+											<div className="flex-1 min-w-0">
+												<div className="flex items-center gap-2">
+													<p className="font-medium truncate">{team.name}</p>
+													{team.myRole === "lead" && (
+														<Badge variant="default" className="gap-1 shrink-0">
+															<Star className="h-3 w-3" />
+															Lead
+														</Badge>
+													)}
+												</div>
+												<p className="text-xs text-muted-foreground flex items-center gap-1">
+													<Building2 className="h-3 w-3" />
+													{team.organization.name}
+												</p>
+											</div>
+											<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+										</div>
+									</CardContent>
+								</Card>
+							</Link>
+						))}
+					</div>
+				</div>
+			)}
+
+			{/* My Organizations */}
+			{organizations.length > 0 && (
+				<div>
+					<div className="flex items-center justify-between mb-4">
+						<h2 className="text-xl font-semibold">My Organizations</h2>
+						<Button variant="outline" size="sm" asChild>
+							<Link to="/organizations">View all</Link>
+						</Button>
+					</div>
+					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+						{organizations.slice(0, 4).map((org) => (
+							<Link
+								key={org.id}
+								to="/organizations/$orgId"
+								params={{ orgId: org.id }}
+							>
+								<Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+									<CardContent className="p-4">
+										<div className="flex items-center gap-3">
+											<Avatar className="h-10 w-10">
+												<AvatarFallback className="bg-primary/10 text-primary">
+													{org.name.charAt(0).toUpperCase()}
+												</AvatarFallback>
+											</Avatar>
+											<div className="flex-1 min-w-0">
+												<p className="font-medium truncate">{org.name}</p>
+												<p className="text-xs text-muted-foreground">
+													{org.teamCount} teams • {org.memberCount} members
+												</p>
+											</div>
+											<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+										</div>
+									</CardContent>
+								</Card>
+							</Link>
+						))}
+					</div>
+				</div>
+			)}
 
 			{/* Recent Retrospectives */}
 			<div>

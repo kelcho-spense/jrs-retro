@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { getMyOrganizations, createOrganization } from "@/lib/api/organizations"
+import { getCurrentUser } from "@/lib/api/users"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -20,14 +21,17 @@ import { Badge } from "@/components/ui/badge"
 
 export const Route = createFileRoute("/organizations/")({
 	loader: async () => {
-		const organizations = await getMyOrganizations()
-		return { organizations }
+		const [organizations, currentUser] = await Promise.all([
+			getMyOrganizations(),
+			getCurrentUser(),
+		])
+		return { organizations, isAdmin: currentUser?.role === "admin" }
 	},
 	component: OrganizationsPage,
 })
 
 function OrganizationsPage() {
-	const { organizations } = Route.useLoaderData()
+	const { organizations, isAdmin } = Route.useLoaderData()
 	const [isCreateOpen, setIsCreateOpen] = useState(false)
 	const [name, setName] = useState("")
 	const [slug, setSlug] = useState("")
@@ -88,22 +92,25 @@ function OrganizationsPage() {
 				<div>
 					<h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
 					<p className="text-muted-foreground">
-						Manage your organizations and teams
+						{isAdmin 
+							? "Manage your organizations and teams" 
+							: "View your organizations and teams"}
 					</p>
 				</div>
-				<Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-					<DialogTrigger asChild>
-						<Button>
-							<Plus className="mr-2 h-4 w-4" />
-							New Organization
-						</Button>
-					</DialogTrigger>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Create Organization</DialogTitle>
-							<DialogDescription>
-								Create a new organization to collaborate with your team.
-							</DialogDescription>
+				{isAdmin && (
+					<Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+						<DialogTrigger asChild>
+							<Button>
+								<Plus className="mr-2 h-4 w-4" />
+								New Organization
+							</Button>
+						</DialogTrigger>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>Create Organization</DialogTitle>
+								<DialogDescription>
+									Create a new organization to collaborate with your team.
+								</DialogDescription>
 						</DialogHeader>
 						<div className="grid gap-4 py-4">
 							<div className="grid gap-2">
@@ -144,6 +151,7 @@ function OrganizationsPage() {
 						</DialogFooter>
 					</DialogContent>
 				</Dialog>
+				)}
 			</div>
 
 			{organizations.length === 0 ? (
@@ -152,13 +160,16 @@ function OrganizationsPage() {
 						<Building2 className="mb-4 h-16 w-16 text-muted-foreground" />
 						<h2 className="mb-2 text-xl font-semibold">No organizations yet</h2>
 						<p className="mb-4 text-center text-muted-foreground">
-							Create your first organization to start collaborating with your
-							team.
+							{isAdmin 
+								? "Create your first organization to start collaborating with your team."
+								: "You are not a member of any organizations yet. Ask an administrator to add you."}
 						</p>
-						<Button onClick={() => setIsCreateOpen(true)}>
-							<Plus className="mr-2 h-4 w-4" />
-							Create Organization
-						</Button>
+						{isAdmin && (
+							<Button onClick={() => setIsCreateOpen(true)}>
+								<Plus className="mr-2 h-4 w-4" />
+								Create Organization
+							</Button>
+						)}
 					</CardContent>
 				</Card>
 			) : (

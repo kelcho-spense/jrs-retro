@@ -9,6 +9,7 @@ import {
 	Settings,
 	LogOut,
 	ChevronUp,
+	ChevronRight,
 	Building2,
 	Shield,
 	User,
@@ -16,6 +17,8 @@ import {
 	Sun,
 	Moon,
 	Laptop,
+	Star,
+	Plus,
 } from "lucide-react"
 
 import {
@@ -29,6 +32,9 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarMenuSub,
+	SidebarMenuSubButton,
+	SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import {
 	DropdownMenu,
@@ -37,22 +43,40 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { authClient } from "@/lib/auth-client"
 import { getCurrentUser } from "@/lib/api/users"
+import { getMyOrganizations } from "@/lib/api/organizations"
+import { getMyTeams } from "@/lib/api/teams"
 import { useTheme } from "@/hooks/use-theme"
+
+type Organization = {
+	id: string
+	name: string
+	myRole: string
+	teamCount: number
+	memberCount: number
+}
+
+type Team = {
+	id: string
+	name: string
+	emoji: string | null
+	myRole: string
+	organization: { id: string; name: string }
+}
 
 const mainNavItems = [
 	{
 		title: "Dashboard",
 		url: "/",
 		icon: LayoutDashboard,
-	},
-	{
-		title: "Organizations",
-		url: "/organizations",
-		icon: Building2,
 	},
 ]
 
@@ -74,9 +98,9 @@ const retroNavItems = [
 	},
 ]
 
-const teamNavItems = [
+const userNavItems = [
 	{
-		title: "My Team",
+		title: "My Teams",
 		url: "/team",
 		icon: Users,
 	},
@@ -145,18 +169,29 @@ export function AppSidebar() {
 	const routerState = useRouterState()
 	const currentPath = routerState.location.pathname
 	const [isAdmin, setIsAdmin] = useState(false)
+	const [organizations, setOrganizations] = useState<Organization[]>([])
+	const [teams, setTeams] = useState<Team[]>([])
+	const [orgsExpanded, setOrgsExpanded] = useState(true)
 
 	useEffect(() => {
-		const checkAdmin = async () => {
+		const loadUserData = async () => {
 			try {
-				const user = await getCurrentUser()
+				const [user, orgs, userTeams] = await Promise.all([
+					getCurrentUser(),
+					getMyOrganizations(),
+					getMyTeams(),
+				])
 				setIsAdmin(user?.role === "admin")
+				setOrganizations(orgs)
+				setTeams(userTeams)
 			} catch {
 				setIsAdmin(false)
+				setOrganizations([])
+				setTeams([])
 			}
 		}
 		if (session?.user) {
-			checkAdmin()
+			loadUserData()
 		}
 	}, [session?.user])
 
@@ -199,6 +234,106 @@ export function AppSidebar() {
 					</SidebarGroupContent>
 				</SidebarGroup>
 
+				{/* Organizations & Teams Section */}
+				<SidebarGroup>
+					<Collapsible open={orgsExpanded} onOpenChange={setOrgsExpanded}>
+						<CollapsibleTrigger asChild>
+							<SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md flex items-center justify-between pr-2">
+								<span className="flex items-center gap-2">
+									<Building2 className="h-4 w-4" />
+									Organizations
+								</span>
+								<ChevronRight className={`h-4 w-4 transition-transform ${orgsExpanded ? "rotate-90" : ""}`} />
+							</SidebarGroupLabel>
+						</CollapsibleTrigger>
+						<CollapsibleContent>
+							<SidebarGroupContent>
+								<SidebarMenu>
+									{organizations.length === 0 ? (
+										<SidebarMenuItem>
+											<SidebarMenuButton asChild>
+												<Link to="/organizations" className="text-muted-foreground text-sm">
+													<Plus className="h-4 w-4" />
+													<span>Browse Organizations</span>
+												</Link>
+											</SidebarMenuButton>
+										</SidebarMenuItem>
+									) : (
+										<>
+											{organizations.map((org) => {
+												const orgTeams = teams.filter(
+													(t) => t.organization.id === org.id
+												)
+												return (
+													<Collapsible key={org.id} defaultOpen>
+														<SidebarMenuItem>
+															<CollapsibleTrigger asChild>
+																<SidebarMenuButton
+																	isActive={currentPath === `/organizations/${org.id}`}
+																	className="justify-between"
+																>
+																	<Link
+																		to="/organizations/$orgId"
+																		params={{ orgId: org.id }}
+																		className="flex items-center gap-2 flex-1"
+																		onClick={(e) => e.stopPropagation()}
+																	>
+																		<Avatar className="h-5 w-5">
+																			<AvatarFallback className="text-xs bg-primary/10 text-primary">
+																				{org.name.charAt(0).toUpperCase()}
+																			</AvatarFallback>
+																		</Avatar>
+																		<span className="truncate">{org.name}</span>
+																	</Link>
+																	{orgTeams.length > 0 && (
+																		<ChevronRight className="h-3 w-3 shrink-0" />
+																	)}
+																</SidebarMenuButton>
+															</CollapsibleTrigger>
+															{orgTeams.length > 0 && (
+																<CollapsibleContent>
+																	<SidebarMenuSub>
+																		{orgTeams.map((team) => (
+																			<SidebarMenuSubItem key={team.id}>
+																				<SidebarMenuSubButton
+																					asChild
+																					isActive={currentPath === `/teams/${team.id}`}
+																				>
+																					<Link
+																						to="/teams/$teamId"
+																						params={{ teamId: team.id }}
+																					>
+																						<span className="mr-1">{team.emoji}</span>
+																						<span className="truncate">{team.name}</span>
+																						{team.myRole === "lead" && (
+																							<Star className="h-3 w-3 ml-auto text-yellow-500" />
+																						)}
+																					</Link>
+																				</SidebarMenuSubButton>
+																			</SidebarMenuSubItem>
+																		))}
+																	</SidebarMenuSub>
+																</CollapsibleContent>
+															)}
+														</SidebarMenuItem>
+													</Collapsible>
+												)
+											})}
+											<SidebarMenuItem>
+												<SidebarMenuButton asChild>
+													<Link to="/organizations" className="text-muted-foreground text-sm">
+														<span>View all organizations</span>
+													</Link>
+												</SidebarMenuButton>
+											</SidebarMenuItem>
+										</>
+									)}
+								</SidebarMenu>
+							</SidebarGroupContent>
+						</CollapsibleContent>
+					</Collapsible>
+				</SidebarGroup>
+
 				<SidebarGroup>
 					<SidebarGroupLabel>Retrospectives</SidebarGroupLabel>
 					<SidebarGroupContent>
@@ -218,10 +353,10 @@ export function AppSidebar() {
 				</SidebarGroup>
 
 				<SidebarGroup>
-					<SidebarGroupLabel>Team</SidebarGroupLabel>
+					<SidebarGroupLabel>Account</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{teamNavItems.map((item) => (
+							{userNavItems.map((item) => (
 								<SidebarMenuItem key={item.title}>
 									<SidebarMenuButton asChild isActive={isActive(item.url)}>
 										<Link to={item.url}>
