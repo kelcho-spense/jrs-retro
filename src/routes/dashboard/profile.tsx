@@ -1,217 +1,279 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
-import { useState } from "react"
-import { User, Mail, Calendar, Shield, Pencil, Save, X, Crown } from "lucide-react"
+import { createFileRoute, useRouter } from "@tanstack/react-router"
+import { useState, useEffect } from "react"
+import {
+	User,
+	Mail,
+	Camera,
+	Save,
+	Loader2,
+	CheckCircle2,
+	AlertCircle,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { authClient } from "@/lib/auth-client"
 import { getCurrentUser, updateProfile } from "@/lib/api/users"
 
+type UserData = {
+	id: string
+	name: string
+	email: string
+	createdAt: Date
+	status: string
+	role: string
+}
+
 export const Route = createFileRoute("/dashboard/profile")({
-	loader: async () => {
-		const user = await getCurrentUser()
-		return { user }
-	},
 	component: ProfilePage,
 })
 
 function ProfilePage() {
 	const router = useRouter()
-	const { user } = Route.useLoaderData()
-	const [isEditing, setIsEditing] = useState(false)
-	const [saving, setSaving] = useState(false)
+	const { data: session } = authClient.useSession()
+	const [user, setUser] = useState<UserData | null>(null)
+	const [isLoading, setIsLoading] = useState(false)
+	const [isSaved, setIsSaved] = useState(false)
+	const [error, setError] = useState<string | null>(null)
 	const [formData, setFormData] = useState({
-		name: user?.name ?? "",
-		bio: user?.bio ?? "",
+		name: "",
 	})
+
+	useEffect(() => {
+		const fetchUser = async () => {
+			const userData = await getCurrentUser()
+			if (userData) {
+				setUser(userData)
+				setFormData({ name: userData.name })
+			}
+		}
+		fetchUser()
+	}, [])
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault()
+		setIsLoading(true)
+		setError(null)
+
+		try {
+			await updateProfile({ data: { name: formData.name, bio: "" } })
+			await authClient.updateUser({ name: formData.name })
+			setIsSaved(true)
+			setTimeout(() => setIsSaved(false), 3000)
+			router.invalidate()
+		} catch (err) {
+			console.error("Failed to update profile:", err)
+			setError("Failed to update profile")
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	const getInitials = (name: string) => {
+		return name
+			.split(" ")
+			.map((n) => n[0])
+			.join("")
+			.toUpperCase()
+			.slice(0, 2)
+	}
 
 	if (!user) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<Card className="w-full max-w-md">
-					<CardContent className="flex flex-col items-center justify-center py-12">
-						<User className="h-12 w-12 text-muted-foreground mb-4" />
-						<CardTitle className="mb-2">Not Logged In</CardTitle>
-						<CardDescription className="text-center mb-4">
-							Please sign in to view your profile.
-						</CardDescription>
-						<Button asChild>
-							<Link to="/sign-in">Sign In</Link>
-						</Button>
-					</CardContent>
-				</Card>
+				<div className="text-center">
+					<User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+					<p className="text-muted-foreground">Not logged in</p>
+				</div>
 			</div>
 		)
 	}
 
-	const handleSave = async () => {
-		setSaving(true)
-		try {
-			await updateProfile({ data: formData })
-			setIsEditing(false)
-			router.invalidate()
-		} catch (error) {
-			console.error("Failed to update profile:", error)
-		} finally {
-			setSaving(false)
-		}
-	}
-
-	const handleCancel = () => {
-		setFormData({
-			name: user.name,
-			bio: user.bio ?? "",
-		})
-		setIsEditing(false)
-	}
-
 	return (
-		<div className="space-y-6">
+		<div className="max-w-2xl mx-auto space-y-8">
+			{/* Header */}
 			<div>
-				<h2 className="text-2xl font-bold tracking-tight">Profile</h2>
-				<p className="text-muted-foreground">
-					Manage your personal information
+				<h1 className="text-2xl font-bold text-foreground">Profile Settings</h1>
+				<p className="text-muted-foreground mt-1">
+					Manage your personal information and account details.
 				</p>
 			</div>
 
-			{/* Profile Card */}
-			<Card>
-				<CardHeader>
-					<div className="flex items-start justify-between">
-						<div className="flex items-center gap-4">
-							<Avatar className="h-20 w-20">
-								<AvatarImage src={user.image ?? undefined} />
-								<AvatarFallback className="text-2xl">
-									{user.name.charAt(0).toUpperCase()}
-								</AvatarFallback>
-							</Avatar>
+			{/* Avatar Section */}
+			<div className="bg-card rounded-xl border border-border p-6">
+				<h2 className="text-lg font-semibold text-foreground mb-4">
+					Profile Photo
+				</h2>
+				<div className="flex items-center gap-6">
+					<div className="relative">
+						{session?.user?.image ? (
+							<img
+								src={session.user.image}
+								alt={session.user.name || "User"}
+								className="w-24 h-24 rounded-full object-cover border-4 border-primary/20"
+							/>
+						) : (
+							<div className="w-24 h-24 rounded-full bg-linear-to-br from-primary to-primary/60 flex items-center justify-center text-white text-2xl font-bold border-4 border-primary/20">
+								{getInitials(user.name || "U")}
+							</div>
+						)}
+						<button
+							type="button"
+							className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white shadow-lg hover:bg-primary/90 transition-colors"
+						>
+							<Camera className="w-4 h-4" />
+						</button>
+					</div>
+					<div>
+						<p className="text-foreground font-medium">{user.name}</p>
+						<p className="text-sm text-muted-foreground mt-1">
+							Upload a new photo
+						</p>
+						<p className="text-sm text-muted-foreground">
+							JPG, PNG or GIF. Max size 2MB.
+						</p>
+						<div className="flex gap-2 mt-3">
+							<Button variant="outline" size="sm">
+								Upload Photo
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								className="text-destructive hover:text-destructive"
+							>
+								Remove
+							</Button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* Profile Form */}
+			<form
+				onSubmit={handleSubmit}
+				className="bg-card rounded-xl border border-border p-6"
+			>
+				<h2 className="text-lg font-semibold text-foreground mb-6">
+					Personal Information
+				</h2>
+
+				{error && (
+					<div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-3">
+						<AlertCircle className="w-5 h-5 text-destructive" />
+						<span className="text-destructive">{error}</span>
+					</div>
+				)}
+
+				{isSaved && (
+					<div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3">
+						<CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+						<span className="text-green-600 dark:text-green-400">
+							Changes saved!
+						</span>
+					</div>
+				)}
+
+				<div className="space-y-6">
+					{/* Name Field */}
+					<div className="space-y-2">
+						<Label
+							htmlFor="name"
+							className="flex items-center gap-2 text-foreground"
+						>
+							<User className="w-4 h-4 text-muted-foreground" />
+							Full Name
+						</Label>
+						<Input
+							id="name"
+							type="text"
+							value={formData.name}
+							onChange={(e) =>
+								setFormData({ ...formData, name: e.target.value })
+							}
+							placeholder="Enter your full name"
+							className="bg-background"
+						/>
+					</div>
+
+					{/* Email Field */}
+					<div className="space-y-2">
+						<Label
+							htmlFor="email"
+							className="flex items-center gap-2 text-foreground"
+						>
+							<Mail className="w-4 h-4 text-muted-foreground" />
+							Email Address
+						</Label>
+						<Input
+							id="email"
+							type="email"
+							value={user.email}
+							disabled
+							className="bg-muted text-muted-foreground cursor-not-allowed"
+						/>
+						<p className="text-sm text-muted-foreground">
+							Email address cannot be changed. Contact support if you need
+							assistance.
+						</p>
+					</div>
+
+					{/* Account Info */}
+					<div className="pt-4 border-t border-border">
+						<h3 className="text-sm font-medium text-foreground mb-3">
+							Account Information
+						</h3>
+						<div className="grid grid-cols-2 gap-4 text-sm">
 							<div>
-								<CardTitle className="flex items-center gap-2">
-									{user.name}
-									{user.role === "admin" && (
-										<Crown className="h-4 w-4 text-amber-500" />
-									)}
-								</CardTitle>
-								<CardDescription>{user.email}</CardDescription>
-								<div className="flex items-center gap-2 mt-2">
-									<Badge variant="secondary">{user.role}</Badge>
-									<StatusBadge status={user.status} />
-								</div>
+								<span className="text-muted-foreground">Account ID</span>
+								<p className="text-foreground font-mono mt-1">
+									{user.id?.slice(0, 8)}...
+								</p>
+							</div>
+							<div>
+								<span className="text-muted-foreground">Member Since</span>
+								<p className="text-foreground mt-1">
+									{new Date(user.createdAt).toLocaleDateString()}
+								</p>
 							</div>
 						</div>
-						{!isEditing && (
-							<Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-								<Pencil className="mr-2 h-4 w-4" />
-								Edit
-							</Button>
-						)}
 					</div>
-				</CardHeader>
-				<CardContent className="space-y-6">
-					{isEditing ? (
-						<>
-							<div className="space-y-2">
-								<Label htmlFor="name">Name</Label>
-								<Input
-									id="name"
-									value={formData.name}
-									onChange={(e) =>
-										setFormData({ ...formData, name: e.target.value })
-									}
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="bio">Bio</Label>
-								<Textarea
-									id="bio"
-									placeholder="Tell us about yourself..."
-									value={formData.bio}
-									onChange={(e) =>
-										setFormData({ ...formData, bio: e.target.value })
-									}
-								/>
-							</div>
-							<div className="flex gap-2">
-								<Button onClick={handleSave} disabled={saving}>
-									<Save className="mr-2 h-4 w-4" />
-									{saving ? "Saving..." : "Save Changes"}
-								</Button>
-								<Button variant="outline" onClick={handleCancel}>
-									<X className="mr-2 h-4 w-4" />
-									Cancel
-								</Button>
-							</div>
-						</>
-					) : (
-						<>
-							<div className="space-y-4">
-								<div className="flex items-center gap-2 text-sm">
-									<Mail className="h-4 w-4 text-muted-foreground" />
-									<span>{user.email}</span>
-								</div>
-								<div className="flex items-center gap-2 text-sm">
-									<Calendar className="h-4 w-4 text-muted-foreground" />
-									<span>
-										Joined {new Date(user.createdAt).toLocaleDateString()}
-									</span>
-								</div>
-								<div className="flex items-center gap-2 text-sm">
-									<Shield className="h-4 w-4 text-muted-foreground" />
-									<span className="capitalize">{user.role}</span>
-								</div>
-							</div>
-							{user.bio && (
-								<div>
-									<h4 className="text-sm font-medium mb-1">Bio</h4>
-									<p className="text-sm text-muted-foreground">{user.bio}</p>
-								</div>
-							)}
-						</>
-					)}
-				</CardContent>
-			</Card>
-		</div>
-	)
-}
+				</div>
 
-function StatusBadge({ status }: { status: string }) {
-	const config: Record<string, { label: string; className: string }> = {
-		pending: {
-			label: "Pending",
-			className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-		},
-		approved: {
-			label: "Active",
-			className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-		},
-		suspended: {
-			label: "Suspended",
-			className: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-		},
-		rejected: {
-			label: "Rejected",
-			className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-		},
-	}
-	const { label, className } = config[status] ?? {
-		label: status,
-		className: "bg-gray-100 text-gray-700",
-	}
-	return (
-		<span
-			className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}
-		>
-			{label}
-		</span>
+				{/* Submit Button */}
+				<div className="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-border">
+					<Button type="submit" disabled={isLoading}>
+						{isLoading ? (
+							<>
+								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+								Saving...
+							</>
+						) : (
+							<>
+								<Save className="w-4 h-4 mr-2" />
+								Save Changes
+							</>
+						)}
+					</Button>
+				</div>
+			</form>
+
+			{/* Danger Zone */}
+			<div className="bg-card rounded-xl border border-destructive/20 p-6">
+				<h2 className="text-lg font-semibold text-destructive mb-2">
+					Danger Zone
+				</h2>
+				<p className="text-muted-foreground mb-4">
+					Permanently delete your account and all associated data. This action
+					cannot be undone.
+				</p>
+				<Button
+					variant="outline"
+					className="border-destructive/50 text-destructive hover:bg-destructive/10"
+				>
+					Delete Account
+				</Button>
+			</div>
+		</div>
 	)
 }

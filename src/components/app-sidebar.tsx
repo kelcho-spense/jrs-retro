@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router"
+import { useState, useEffect } from "react"
 import {
 	LayoutDashboard,
 	History,
@@ -9,6 +10,12 @@ import {
 	LogOut,
 	ChevronUp,
 	Building2,
+	Shield,
+	User,
+	Monitor,
+	Sun,
+	Moon,
+	Laptop,
 } from "lucide-react"
 
 import {
@@ -31,7 +38,10 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { authClient } from "@/lib/auth-client"
+import { getCurrentUser } from "@/lib/api/users"
+import { useTheme } from "@/hooks/use-theme"
 
 const mainNavItems = [
 	{
@@ -77,10 +87,78 @@ const teamNavItems = [
 	},
 ]
 
+const adminNavItems = [
+	{
+		title: "Admin Dashboard",
+		url: "/admin",
+		icon: LayoutDashboard,
+	},
+	{
+		title: "Manage Users",
+		url: "/admin/users",
+		icon: Users,
+	},
+]
+
+function ThemeToggle() {
+	const { theme, setTheme } = useTheme()
+
+	return (
+		<ToggleGroup
+			type="single"
+			value={theme}
+			onValueChange={(value) => {
+				if (value) setTheme(value as "light" | "dark" | "system")
+			}}
+			className="w-full justify-between"
+		>
+			<ToggleGroupItem
+				value="light"
+				aria-label="Light theme"
+				className="flex-1 gap-1"
+			>
+				<Sun className="h-4 w-4" />
+				<span className="text-xs">Light</span>
+			</ToggleGroupItem>
+			<ToggleGroupItem
+				value="dark"
+				aria-label="Dark theme"
+				className="flex-1 gap-1"
+			>
+				<Moon className="h-4 w-4" />
+				<span className="text-xs">Dark</span>
+			</ToggleGroupItem>
+			<ToggleGroupItem
+				value="system"
+				aria-label="System theme"
+				className="flex-1 gap-1"
+			>
+				<Laptop className="h-4 w-4" />
+				<span className="text-xs">Auto</span>
+			</ToggleGroupItem>
+		</ToggleGroup>
+	)
+}
+
 export function AppSidebar() {
 	const { data: session } = authClient.useSession()
 	const routerState = useRouterState()
 	const currentPath = routerState.location.pathname
+	const [isAdmin, setIsAdmin] = useState(false)
+
+	useEffect(() => {
+		const checkAdmin = async () => {
+			try {
+				const user = await getCurrentUser()
+				setIsAdmin(user?.role === "admin")
+			} catch {
+				setIsAdmin(false)
+			}
+		}
+		if (session?.user) {
+			checkAdmin()
+		}
+	}, [session?.user])
 
 	const isActive = (url: string) => {
 		if (url === "/") {
@@ -91,6 +169,7 @@ export function AppSidebar() {
 
 	const handleSignOut = async () => {
 		await authClient.signOut()
+		window.location.href = "/sign-in"
 	}
 
 	return (
@@ -155,9 +234,40 @@ export function AppSidebar() {
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
+
+				{isAdmin && (
+					<SidebarGroup>
+						<SidebarGroupLabel className="flex items-center gap-2">
+							<Shield className="h-4 w-4" />
+							Admin
+						</SidebarGroupLabel>
+						<SidebarGroupContent>
+							<SidebarMenu>
+								{adminNavItems.map((item) => (
+									<SidebarMenuItem key={item.title}>
+										<SidebarMenuButton asChild isActive={isActive(item.url)}>
+											<Link to={item.url}>
+												<item.icon />
+												<span>{item.title}</span>
+											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								))}
+							</SidebarMenu>
+						</SidebarGroupContent>
+					</SidebarGroup>
+				)}
 			</SidebarContent>
 
 			<SidebarFooter>
+				{/* Theme Toggle */}
+				<div className="px-3 py-2">
+					<div className="flex items-center justify-between mb-2">
+						<span className="text-sm text-muted-foreground">Theme</span>
+					</div>
+					<ThemeToggle />
+				</div>
+
 				{session?.user ? (
 					<SidebarMenu>
 						<SidebarMenuItem>
@@ -187,7 +297,25 @@ export function AppSidebar() {
 									className="w-[--radix-popper-anchor-width]"
 								>
 									<DropdownMenuItem asChild>
-										<Link to="/settings">
+										<Link to="/dashboard/profile">
+											<User className="mr-2 h-4 w-4" />
+											Profile
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuItem asChild>
+										<Link to="/dashboard/security">
+											<Shield className="mr-2 h-4 w-4" />
+											Security
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuItem asChild>
+										<Link to="/dashboard/sessions">
+											<Monitor className="mr-2 h-4 w-4" />
+											Sessions
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuItem asChild>
+										<Link to="/dashboard/settings">
 											<Settings className="mr-2 h-4 w-4" />
 											Settings
 										</Link>
@@ -205,7 +333,7 @@ export function AppSidebar() {
 					<SidebarMenu>
 						<SidebarMenuItem>
 							<SidebarMenuButton asChild>
-								<Link to="/sign-in">Sign in</Link>
+								<a href="/sign-in">Sign in</a>
 							</SidebarMenuButton>
 						</SidebarMenuItem>
 					</SidebarMenu>

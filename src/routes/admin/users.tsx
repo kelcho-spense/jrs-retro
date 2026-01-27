@@ -119,25 +119,7 @@ function AdminUsersPage() {
 	const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserItem | null>(null)
 	const [bulkActionModal, setBulkActionModal] = useState<string | null>(null)
 
-	// Access check
-	if (!currentUser || currentUser.role !== "admin") {
-		return (
-			<div className="flex min-h-[60vh] items-center justify-center">
-				<Card className="w-full max-w-md">
-					<CardContent className="flex flex-col items-center justify-center py-12">
-						<Shield className="h-12 w-12 text-muted-foreground mb-4" />
-						<CardTitle className="mb-2">Access Denied</CardTitle>
-						<CardDescription className="text-center mb-4">
-							You need administrator privileges to access this page.
-						</CardDescription>
-						<Button asChild>
-							<Link to="/">Go to Dashboard</Link>
-						</Button>
-					</CardContent>
-				</Card>
-			</div>
-		)
-	}
+	// Note: Access check is now handled by the parent /admin layout route
 
 	// Filter users
 	const filteredUsers = useMemo(() => {

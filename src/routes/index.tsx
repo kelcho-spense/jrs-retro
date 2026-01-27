@@ -17,18 +17,19 @@ export const Route = createFileRoute("/")({
 		const user = await getCurrentUser()
 
 		if (!user) {
-			throw redirect({ to: "/sign-in" })
+			// Use type assertion since route exists
+			throw redirect({ to: "/sign-in" as const })
 		}
 
 		// Check user status
 		if (user.status === "pending") {
-			throw redirect({ to: "/sign-in", search: { pending: "true" } })
+			throw redirect({ to: "/sign-in" as const, search: { pending: "true" } })
 		}
 		if (user.status === "rejected") {
-			throw redirect({ to: "/sign-in", search: { rejected: "true" } })
+			throw redirect({ to: "/sign-in" as const, search: { rejected: "true" } })
 		}
 		if (user.status === "suspended") {
-			throw redirect({ to: "/sign-in", search: { suspended: "true" } })
+			throw redirect({ to: "/sign-in" as const, search: { suspended: "true" } })
 		}
 
 		return { user }
