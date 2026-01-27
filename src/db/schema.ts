@@ -175,9 +175,13 @@ export const retrospective = sqliteTable("retrospective", {
 	name: text("name").notNull(),
 	teamId: text("team_id").notNull().references(() => team.id, { onDelete: "cascade" }),
 	templateId: text("template_id").notNull().references(() => template.id),
-	status: text("status", { enum: ["draft", "active", "voting", "completed"] }).notNull().default("draft"),
+	status: text("status", { enum: ["draft", "active", "voting", "discussing", "completed"] }).notNull().default("draft"),
 	isAnonymous: integer("is_anonymous", { mode: "boolean" }).notNull().default(true),
 	maxVotesPerUser: integer("max_votes_per_user").notNull().default(3),
+	voteType: text("vote_type", { enum: ["multi", "single"] }).notNull().default("multi"),
+	timerDuration: integer("timer_duration"), // Duration in seconds for card creation phase
+	timerStartedAt: integer("timer_started_at", { mode: "timestamp" }), // When the timer started
+	timerEndsAt: integer("timer_ends_at", { mode: "timestamp" }), // When the timer ends
 	createdById: text("created_by_id").notNull().references(() => user.id),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
@@ -206,6 +210,15 @@ export const vote = sqliteTable("vote", {
 	cardId: text("card_id").notNull().references(() => card.id, { onDelete: "cascade" }),
 	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+})
+
+export const cardComment = sqliteTable("card_comment", {
+	id: text("id").primaryKey(),
+	cardId: text("card_id").notNull().references(() => card.id, { onDelete: "cascade" }),
+	authorId: text("author_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+	content: text("content").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 })
 
 export const actionItem = sqliteTable("action_item", {
