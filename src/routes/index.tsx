@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute, Link, redirect } from "@tanstack/react-router"
 import { Plus, History, Users, MessageSquare, ThumbsUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -10,8 +10,29 @@ import {
 	CardTitle,
 } from "@/components/ui/card"
 import { getRecentRetros, getDashboardStats } from "@/lib/api/retros"
+import { getCurrentUser } from "@/lib/api/users"
 
 export const Route = createFileRoute("/")({
+	beforeLoad: async () => {
+		const user = await getCurrentUser()
+
+		if (!user) {
+			throw redirect({ to: "/sign-in" })
+		}
+
+		// Check user status
+		if (user.status === "pending") {
+			throw redirect({ to: "/sign-in", search: { pending: "true" } })
+		}
+		if (user.status === "rejected") {
+			throw redirect({ to: "/sign-in", search: { rejected: "true" } })
+		}
+		if (user.status === "suspended") {
+			throw redirect({ to: "/sign-in", search: { suspended: "true" } })
+		}
+
+		return { user }
+	},
 	loader: async () => {
 		const [retros, stats] = await Promise.all([
 			getRecentRetros(),

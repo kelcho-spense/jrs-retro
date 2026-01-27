@@ -496,7 +496,7 @@ function OrganizationDetailPage() {
 											<Label htmlFor="role">Role</Label>
 											<Select
 												value={inviteRole}
-												onValueChange={(v) => setInviteRole(v as "admin" | "member")}
+												onValueChange={(v: string) => setInviteRole(v as "admin" | "member")}
 											>
 												<SelectTrigger>
 													<SelectValue />

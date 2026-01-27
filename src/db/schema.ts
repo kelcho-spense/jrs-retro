@@ -5,7 +5,7 @@ import { relations } from "drizzle-orm"
 // Better Auth Core Tables
 // ============================================================================
 
-export const userStatusEnum = ["pending", "approved", "rejected"] as const
+export const userStatusEnum = ["pending", "approved", "rejected", "suspended"] as const
 export type UserStatus = (typeof userStatusEnum)[number]
 
 export const userRoleEnum = ["admin", "member"] as const
@@ -20,8 +20,12 @@ export const user = sqliteTable("user", {
 	status: text("status", { enum: userStatusEnum }).notNull().default("pending"),
 	role: text("role", { enum: userRoleEnum }).notNull().default("member"),
 	bio: text("bio"),
+	lastActiveAt: integer("last_active_at", { mode: "timestamp" }),
 	approvedAt: integer("approved_at", { mode: "timestamp" }),
 	approvedById: text("approved_by_id"),
+	suspendedAt: integer("suspended_at", { mode: "timestamp" }),
+	suspendedById: text("suspended_by_id"),
+	suspendedReason: text("suspended_reason"),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 })
@@ -60,6 +64,27 @@ export const verification = sqliteTable("verification", {
 	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+})
+
+// Admin action log for auditing
+export const adminActionLogActionEnum = [
+	"user_approved",
+	"user_rejected",
+	"user_suspended",
+	"user_reactivated",
+	"user_role_changed",
+	"user_deleted",
+	"password_reset_triggered",
+] as const
+export type AdminActionLogAction = (typeof adminActionLogActionEnum)[number]
+
+export const adminActionLog = sqliteTable("admin_action_log", {
+	id: text("id").primaryKey(),
+	adminId: text("admin_id").notNull().references(() => user.id),
+	targetUserId: text("target_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+	action: text("action", { enum: adminActionLogActionEnum }).notNull(),
+	details: text("details"), // JSON string for additional context
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 })
 
 // ============================================================================
@@ -269,4 +294,9 @@ export const actionItemRelations = relations(actionItem, ({ one }) => ({
 	retrospective: one(retrospective, { fields: [actionItem.retroId], references: [retrospective.id] }),
 	card: one(card, { fields: [actionItem.cardId], references: [card.id] }),
 	assignee: one(user, { fields: [actionItem.assigneeId], references: [user.id] }),
+}))
+
+export const adminActionLogRelations = relations(adminActionLog, ({ one }) => ({
+	admin: one(user, { fields: [adminActionLog.adminId], references: [user.id], relationName: "adminActions" }),
+	targetUser: one(user, { fields: [adminActionLog.targetUserId], references: [user.id], relationName: "receivedActions" }),
 }))

@@ -361,7 +361,6 @@ export const removeOrgMember = createServerFn({ method: "POST" })
 		}
 
 		const isSelf = data.userId === sessionUser.id
-		const isOwner = org.ownerId === sessionUser.id
 
 		// Can't remove the owner
 		if (data.userId === org.ownerId) {
