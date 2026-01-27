@@ -67,6 +67,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/UserAvatar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -541,12 +542,12 @@ function AdminUsersPage() {
 						<div className="space-y-6">
 							{/* User Info */}
 							<div className="flex items-start gap-4">
-								<Avatar className="h-16 w-16">
-									<AvatarImage src={userDetails.user.image ?? undefined} />
-									<AvatarFallback className="text-lg">
-										{userDetails.user.name.charAt(0).toUpperCase()}
-									</AvatarFallback>
-								</Avatar>
+								<UserAvatar
+									image={userDetails.user.image}
+									name={userDetails.user.name}
+									userId={userDetails.user.id}
+									size="xl"
+								/>
 								<div className="flex-1">
 									<h3 className="text-lg font-semibold flex items-center gap-2">
 										{userDetails.user.name}
@@ -821,10 +822,12 @@ function UserRow({
 				{isCurrentUser && <div className="w-5" />}
 
 				{/* Avatar */}
-				<Avatar>
-					<AvatarImage src={user.image ?? undefined} />
-					<AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-				</Avatar>
+				<UserAvatar
+					image={user.image}
+					name={user.name}
+					userId={user.id}
+					size="md"
+				/>
 
 				{/* Info */}
 				<div className="flex-1 min-w-0">

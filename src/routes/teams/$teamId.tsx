@@ -55,6 +55,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/UserAvatar"
 import { Badge } from "@/components/ui/badge"
 import {
 	ArrowLeft,
@@ -429,12 +430,12 @@ function TeamDetailPage() {
 							<Card key={member.userId}>
 								<CardContent className="flex items-center justify-between p-4">
 									<div className="flex items-center gap-3">
-										<Avatar>
-											<AvatarImage src={member.user.image ?? undefined} />
-											<AvatarFallback>
-												{getInitials(member.user.name ?? member.user.email ?? "U")}
-											</AvatarFallback>
-										</Avatar>
+										<UserAvatar
+											image={member.user.image}
+											name={member.user.name}
+											userId={member.userId}
+											size="md"
+										/>
 										<div>
 											<p className="font-medium">
 												{member.user.name ?? member.user.email}
@@ -511,12 +512,12 @@ function TeamDetailPage() {
 							<Card key={request.id}>
 								<CardContent className="flex items-center justify-between p-4">
 									<div className="flex items-center gap-3">
-										<Avatar>
-											<AvatarImage src={request.user.image ?? undefined} />
-											<AvatarFallback>
-												{getInitials(request.user.name ?? request.user.email ?? "U")}
-											</AvatarFallback>
-										</Avatar>
+										<UserAvatar
+											image={request.user.image}
+											name={request.user.name}
+											userId={request.userId}
+											size="md"
+										/>
 										<div>
 											<p className="font-medium">
 												{request.user.name ?? request.user.email}

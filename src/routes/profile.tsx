@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/UserAvatar"
 import { getCurrentUser, updateProfile } from "@/lib/api/users"
 
 export const Route = createFileRoute("/profile")({
@@ -117,12 +118,12 @@ function ProfilePage() {
 				<CardHeader>
 					<div className="flex items-start justify-between">
 						<div className="flex items-center gap-4">
-							<Avatar className="h-20 w-20">
-								<AvatarImage src={user.image ?? undefined} />
-								<AvatarFallback className="text-2xl">
-									{user.name.charAt(0).toUpperCase()}
-								</AvatarFallback>
-							</Avatar>
+							<UserAvatar
+								image={user.image}
+								name={user.name}
+								userId={user.id}
+								size="xl"
+							/>
 							<div>
 								<CardTitle className="text-2xl flex items-center gap-2">
 									{user.name}

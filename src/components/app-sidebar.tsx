@@ -49,6 +49,7 @@ import {
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/UserAvatar"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { authClient } from "@/lib/auth-client"
 import { getCurrentUser } from "@/lib/api/users"
@@ -421,12 +422,12 @@ export function AppSidebar() {
 										size="lg"
 										className="data-[state=open]:bg-sidebar-accent"
 									>
-										<Avatar className="h-8 w-8">
-											<AvatarImage src={session.user.image ?? undefined} />
-											<AvatarFallback>
-												{session.user.name?.charAt(0).toUpperCase() ?? "U"}
-											</AvatarFallback>
-										</Avatar>
+										<UserAvatar
+											image={session.user.image}
+											name={session.user.name}
+											userId={session.user.id}
+											size="md"
+										/>
 										<div className="flex flex-col gap-0.5 leading-none">
 											<span className="font-semibold">{session.user.name}</span>
 											<span className="text-xs text-muted-foreground">
