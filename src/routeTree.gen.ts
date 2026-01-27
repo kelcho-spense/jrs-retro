@@ -15,10 +15,15 @@ import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RetrosIndexRouteImport } from './routes/retros/index'
+import { Route as OrganizationsIndexRouteImport } from './routes/organizations/index'
+import { Route as TeamsTeamIdRouteImport } from './routes/teams/$teamId'
 import { Route as RetrosNewRouteImport } from './routes/retros/new'
 import { Route as RetrosRetroIdRouteImport } from './routes/retros/$retroId'
+import { Route as OrganizationsOrgIdRouteImport } from './routes/organizations/$orgId'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const TemplatesRoute = TemplatesRouteImport.update({
@@ -51,6 +56,11 @@ const ReportsRoute = ReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -59,6 +69,16 @@ const IndexRoute = IndexRouteImport.update({
 const RetrosIndexRoute = RetrosIndexRouteImport.update({
   id: '/retros/',
   path: '/retros/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizationsIndexRoute = OrganizationsIndexRouteImport.update({
+  id: '/organizations/',
+  path: '/organizations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeamsTeamIdRoute = TeamsTeamIdRouteImport.update({
+  id: '/teams/$teamId',
+  path: '/teams/$teamId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RetrosNewRoute = RetrosNewRouteImport.update({
@@ -71,6 +91,16 @@ const RetrosRetroIdRoute = RetrosRetroIdRouteImport.update({
   path: '/retros/$retroId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrganizationsOrgIdRoute = OrganizationsOrgIdRouteImport.update({
+  id: '/organizations/$orgId',
+  path: '/organizations/$orgId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -79,41 +109,56 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/team': typeof TeamRoute
   '/templates': typeof TemplatesRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/organizations/$orgId': typeof OrganizationsOrgIdRoute
   '/retros/$retroId': typeof RetrosRetroIdRoute
   '/retros/new': typeof RetrosNewRoute
+  '/teams/$teamId': typeof TeamsTeamIdRoute
+  '/organizations/': typeof OrganizationsIndexRoute
   '/retros/': typeof RetrosIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/team': typeof TeamRoute
   '/templates': typeof TemplatesRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/organizations/$orgId': typeof OrganizationsOrgIdRoute
   '/retros/$retroId': typeof RetrosRetroIdRoute
   '/retros/new': typeof RetrosNewRoute
+  '/teams/$teamId': typeof TeamsTeamIdRoute
+  '/organizations': typeof OrganizationsIndexRoute
   '/retros': typeof RetrosIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/team': typeof TeamRoute
   '/templates': typeof TemplatesRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/organizations/$orgId': typeof OrganizationsOrgIdRoute
   '/retros/$retroId': typeof RetrosRetroIdRoute
   '/retros/new': typeof RetrosNewRoute
+  '/teams/$teamId': typeof TeamsTeamIdRoute
+  '/organizations/': typeof OrganizationsIndexRoute
   '/retros/': typeof RetrosIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -121,54 +166,74 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/profile'
     | '/reports'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/team'
     | '/templates'
+    | '/admin/users'
+    | '/organizations/$orgId'
     | '/retros/$retroId'
     | '/retros/new'
+    | '/teams/$teamId'
+    | '/organizations/'
     | '/retros/'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/profile'
     | '/reports'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/team'
     | '/templates'
+    | '/admin/users'
+    | '/organizations/$orgId'
     | '/retros/$retroId'
     | '/retros/new'
+    | '/teams/$teamId'
+    | '/organizations'
     | '/retros'
     | '/api/auth/$'
   id:
     | '__root__'
     | '/'
+    | '/profile'
     | '/reports'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/team'
     | '/templates'
+    | '/admin/users'
+    | '/organizations/$orgId'
     | '/retros/$retroId'
     | '/retros/new'
+    | '/teams/$teamId'
+    | '/organizations/'
     | '/retros/'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ProfileRoute: typeof ProfileRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   TeamRoute: typeof TeamRoute
   TemplatesRoute: typeof TemplatesRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  OrganizationsOrgIdRoute: typeof OrganizationsOrgIdRoute
   RetrosRetroIdRoute: typeof RetrosRetroIdRoute
   RetrosNewRoute: typeof RetrosNewRoute
+  TeamsTeamIdRoute: typeof TeamsTeamIdRoute
+  OrganizationsIndexRoute: typeof OrganizationsIndexRoute
   RetrosIndexRoute: typeof RetrosIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -217,6 +282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -229,6 +301,20 @@ declare module '@tanstack/react-router' {
       path: '/retros'
       fullPath: '/retros/'
       preLoaderRoute: typeof RetrosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organizations/': {
+      id: '/organizations/'
+      path: '/organizations'
+      fullPath: '/organizations/'
+      preLoaderRoute: typeof OrganizationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/teams/$teamId': {
+      id: '/teams/$teamId'
+      path: '/teams/$teamId'
+      fullPath: '/teams/$teamId'
+      preLoaderRoute: typeof TeamsTeamIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/retros/new': {
@@ -245,6 +331,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RetrosRetroIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/organizations/$orgId': {
+      id: '/organizations/$orgId'
+      path: '/organizations/$orgId'
+      fullPath: '/organizations/$orgId'
+      preLoaderRoute: typeof OrganizationsOrgIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -257,14 +357,19 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ProfileRoute: ProfileRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   TeamRoute: TeamRoute,
   TemplatesRoute: TemplatesRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  OrganizationsOrgIdRoute: OrganizationsOrgIdRoute,
   RetrosRetroIdRoute: RetrosRetroIdRoute,
   RetrosNewRoute: RetrosNewRoute,
+  TeamsTeamIdRoute: TeamsTeamIdRoute,
+  OrganizationsIndexRoute: OrganizationsIndexRoute,
   RetrosIndexRoute: RetrosIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

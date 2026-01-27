@@ -8,6 +8,13 @@
       "when": 1769538071265,
       "tag": "0000_volatile_jane_foster",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1769539303335,
+      "tag": "0001_left_drax",
+      "breakpoints": true
     }
   ]
 }

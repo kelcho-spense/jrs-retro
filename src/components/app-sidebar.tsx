@@ -8,6 +8,7 @@ import {
 	Settings,
 	LogOut,
 	ChevronUp,
+	Building2,
 } from "lucide-react"
 
 import {
@@ -37,6 +38,11 @@ const mainNavItems = [
 		title: "Dashboard",
 		url: "/",
 		icon: LayoutDashboard,
+	},
+	{
+		title: "Organizations",
+		url: "/organizations",
+		icon: Building2,
 	},
 ]
 

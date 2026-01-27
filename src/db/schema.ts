@@ -5,12 +5,23 @@ import { relations } from "drizzle-orm"
 // Better Auth Core Tables
 // ============================================================================
 
+export const userStatusEnum = ["pending", "approved", "rejected"] as const
+export type UserStatus = (typeof userStatusEnum)[number]
+
+export const userRoleEnum = ["admin", "member"] as const
+export type UserRole = (typeof userRoleEnum)[number]
+
 export const user = sqliteTable("user", {
 	id: text("id").primaryKey(),
 	name: text("name").notNull(),
 	email: text("email").notNull().unique(),
 	emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
 	image: text("image"),
+	status: text("status", { enum: userStatusEnum }).notNull().default("pending"),
+	role: text("role", { enum: userRoleEnum }).notNull().default("member"),
+	bio: text("bio"),
+	approvedAt: integer("approved_at", { mode: "timestamp" }),
+	approvedById: text("approved_by_id"),
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 })
