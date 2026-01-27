@@ -319,12 +319,18 @@ export const cardRelations = relations(card, ({ one, many }) => ({
 	column: one(templateColumn, { fields: [card.columnId], references: [templateColumn.id] }),
 	author: one(user, { fields: [card.authorId], references: [user.id] }),
 	votes: many(vote),
+	comments: many(cardComment),
 	actionItems: many(actionItem),
 }))
 
 export const voteRelations = relations(vote, ({ one }) => ({
 	card: one(card, { fields: [vote.cardId], references: [card.id] }),
 	user: one(user, { fields: [vote.userId], references: [user.id] }),
+}))
+
+export const cardCommentRelations = relations(cardComment, ({ one }) => ({
+	card: one(card, { fields: [cardComment.cardId], references: [card.id] }),
+	author: one(user, { fields: [cardComment.authorId], references: [user.id] }),
 }))
 
 export const actionItemRelations = relations(actionItem, ({ one }) => ({
