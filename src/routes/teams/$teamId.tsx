@@ -10,6 +10,10 @@ import {
 	removeTeamMember,
 	joinTeam,
 	leaveTeam,
+	requestToJoinTeam,
+	cancelJoinRequest,
+	approveJoinRequest,
+	rejectJoinRequest,
 } from "@/lib/api/teams"
 import { getOrganization } from "@/lib/api/organizations"
 import { Button } from "@/components/ui/button"
@@ -55,6 +59,8 @@ import { Badge } from "@/components/ui/badge"
 import {
 	ArrowLeft,
 	Building2,
+	Check,
+	Clock,
 	LogOut,
 	MoreHorizontal,
 	Settings,
@@ -64,6 +70,7 @@ import {
 	UserMinus,
 	UserPlus,
 	Users,
+	X,
 } from "lucide-react"
 
 export const Route = createFileRoute("/teams/$teamId")({
@@ -85,6 +92,8 @@ function TeamDetailPage() {
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 	const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
 	const [removeMemberId, setRemoveMemberId] = useState<string | null>(null)
+	const [isRequestJoinOpen, setIsRequestJoinOpen] = useState(false)
+	const [cancelRequestConfirmOpen, setCancelRequestConfirmOpen] = useState(false)
 
 	// Form states
 	const [editName, setEditName] = useState(team.name)
@@ -92,6 +101,7 @@ function TeamDetailPage() {
 	const [editEmoji, setEditEmoji] = useState(team.emoji ?? "👥")
 	const [addMemberUserId, setAddMemberUserId] = useState("")
 	const [addMemberRole, setAddMemberRole] = useState<"lead" | "member">("member")
+	const [joinRequestMessage, setJoinRequestMessage] = useState("")
 
 	const isOrgAdmin = team.orgRole === "owner" || team.orgRole === "admin"
 	const isTeamLead = team.myRole === "lead"
@@ -165,6 +175,37 @@ function TeamDetailPage() {
 		},
 	})
 
+	const requestToJoinMutation = useMutation({
+		mutationFn: () =>
+			requestToJoinTeam({
+				data: { teamId: team.id, message: joinRequestMessage || undefined },
+			}),
+		onSuccess: () => {
+			setIsRequestJoinOpen(false)
+			setJoinRequestMessage("")
+			window.location.reload()
+		},
+	})
+
+	const cancelRequestMutation = useMutation({
+		mutationFn: () => cancelJoinRequest({ data: team.myPendingRequestId! }),
+		onSuccess: () => {
+			setCancelRequestConfirmOpen(false)
+			window.location.reload()
+		},
+	})
+
+	const approveRequestMutation = useMutation({
+		mutationFn: (requestId: string) =>
+			approveJoinRequest({ data: { requestId } }),
+		onSuccess: () => window.location.reload(),
+	})
+
+	const rejectRequestMutation = useMutation({
+		mutationFn: (requestId: string) => rejectJoinRequest({ data: { requestId } }),
+		onSuccess: () => window.location.reload(),
+	})
+
 	const getRoleBadge = (role: string) => {
 		if (role === "lead") {
 			return (
@@ -221,10 +262,25 @@ function TeamDetailPage() {
 						</div>
 					</div>
 					<div className="flex items-center gap-2">
-						{!isMember && (
+						{!isMember && !team.hasPendingRequest && isOrgAdmin && (
 							<Button onClick={() => joinMutation.mutate()} disabled={joinMutation.isPending}>
 								<UserPlus className="mr-2 h-4 w-4" />
 								Join Team
+							</Button>
+						)}
+						{!isMember && !team.hasPendingRequest && !isOrgAdmin && team.orgRole && (
+							<Button onClick={() => setIsRequestJoinOpen(true)}>
+								<UserPlus className="mr-2 h-4 w-4" />
+								Request to Join
+							</Button>
+						)}
+						{!isMember && team.hasPendingRequest && (
+							<Button
+								variant="outline"
+								onClick={() => setCancelRequestConfirmOpen(true)}
+							>
+								<Clock className="mr-2 h-4 w-4" />
+								Request Pending
 							</Button>
 						)}
 						<DropdownMenu>
@@ -347,10 +403,22 @@ function TeamDetailPage() {
 							<p className="mb-4 text-center text-muted-foreground">
 								Be the first to join this team!
 							</p>
-							{!isMember && (
+							{!isMember && !team.hasPendingRequest && isOrgAdmin && (
 								<Button onClick={() => joinMutation.mutate()}>
 									<UserPlus className="mr-2 h-4 w-4" />
 									Join Team
+								</Button>
+							)}
+							{!isMember && !team.hasPendingRequest && !isOrgAdmin && team.orgRole && (
+								<Button onClick={() => setIsRequestJoinOpen(true)}>
+									<UserPlus className="mr-2 h-4 w-4" />
+									Request to Join
+								</Button>
+							)}
+							{!isMember && team.hasPendingRequest && (
+								<Button variant="outline" onClick={() => setCancelRequestConfirmOpen(true)}>
+									<Clock className="mr-2 h-4 w-4" />
+									Request Pending
 								</Button>
 							)}
 						</CardContent>
@@ -431,6 +499,72 @@ function TeamDetailPage() {
 					</div>
 				)}
 			</div>
+
+			{/* Pending Join Requests Section - Only for admins/leads */}
+			{canManage && team.joinRequests && team.joinRequests.length > 0 && (
+				<div className="mt-8 space-y-4">
+					<h2 className="text-xl font-semibold">
+						Pending Requests ({team.joinRequests.length})
+					</h2>
+					<div className="space-y-2">
+						{team.joinRequests.map((request) => (
+							<Card key={request.id}>
+								<CardContent className="flex items-center justify-between p-4">
+									<div className="flex items-center gap-3">
+										<Avatar>
+											<AvatarImage src={request.user.image ?? undefined} />
+											<AvatarFallback>
+												{getInitials(request.user.name ?? request.user.email ?? "U")}
+											</AvatarFallback>
+										</Avatar>
+										<div>
+											<p className="font-medium">
+												{request.user.name ?? request.user.email}
+											</p>
+											{request.user.name && (
+												<p className="text-sm text-muted-foreground">
+													{request.user.email}
+												</p>
+											)}
+											{request.message && (
+												<p className="mt-1 text-sm text-muted-foreground italic">
+													"{request.message}"
+												</p>
+											)}
+										</div>
+									</div>
+									<div className="flex items-center gap-2">
+										<Badge variant="secondary" className="gap-1">
+											<Clock className="h-3 w-3" />
+											Pending
+										</Badge>
+										<Button
+											size="sm"
+											variant="outline"
+											className="text-green-600 hover:bg-green-50 hover:text-green-700"
+											onClick={() => approveRequestMutation.mutate(request.id)}
+											disabled={approveRequestMutation.isPending}
+										>
+											<Check className="mr-1 h-4 w-4" />
+											Approve
+										</Button>
+										<Button
+											size="sm"
+											variant="outline"
+											className="text-destructive hover:bg-destructive/10"
+											onClick={() => rejectRequestMutation.mutate(request.id)}
+											disabled={rejectRequestMutation.isPending}
+										>
+											<X className="mr-1 h-4 w-4" />
+											Reject
+										</Button>
+									</div>
+								</CardContent>
+							</Card>
+						))}
+					</div>
+				</div>
+			)}
 
 			{/* Edit Team Dialog */}
 			<Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -539,6 +673,61 @@ function TeamDetailPage() {
 							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 						>
 							Remove
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			{/* Request to Join Dialog */}
+			<Dialog open={isRequestJoinOpen} onOpenChange={setIsRequestJoinOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Request to Join Team</DialogTitle>
+						<DialogDescription>
+							Your request will be sent to the team leads and organization admins for approval.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						<div className="grid gap-2">
+							<Label htmlFor="joinMessage">Message (optional)</Label>
+							<Textarea
+								id="joinMessage"
+								placeholder="Tell us why you'd like to join this team..."
+								value={joinRequestMessage}
+								onChange={(e) => setJoinRequestMessage(e.target.value)}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setIsRequestJoinOpen(false)}>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => requestToJoinMutation.mutate()}
+							disabled={requestToJoinMutation.isPending}
+						>
+							{requestToJoinMutation.isPending ? "Sending..." : "Send Request"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Cancel Request Confirm */}
+			<AlertDialog open={cancelRequestConfirmOpen} onOpenChange={setCancelRequestConfirmOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Cancel Join Request?</AlertDialogTitle>
+						<AlertDialogDescription>
+							Your pending request to join "{team.name}" will be cancelled.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Keep Request</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() => cancelRequestMutation.mutate()}
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+						>
+							Cancel Request
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

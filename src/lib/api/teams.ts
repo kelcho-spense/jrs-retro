@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
 import { z } from "zod"
 import { db } from "@/db"
-import { team, teamMember, organizationMember } from "@/db/schema"
+import { team, teamMember, teamJoinRequest, organizationMember } from "@/db/schema"
 import { eq, and } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { nanoid } from "nanoid"
@@ -115,6 +115,12 @@ export const getTeam = createServerFn({ method: "GET" })
 						user: true,
 					},
 				},
+				joinRequests: {
+					where: eq(teamJoinRequest.status, "pending"),
+					with: {
+						user: true,
+					},
+				},
 			},
 		})
 
@@ -136,11 +142,22 @@ export const getTeam = createServerFn({ method: "GET" })
 
 		const myTeamMembership = t.members.find((m) => m.userId === sessionUser.id)
 
+		// Check if user has a pending join request
+		const myPendingRequest = await db.query.teamJoinRequest.findFirst({
+			where: and(
+				eq(teamJoinRequest.teamId, teamId),
+				eq(teamJoinRequest.userId, sessionUser.id),
+				eq(teamJoinRequest.status, "pending")
+			),
+		})
+
 		return {
 			...t,
 			myRole: myTeamMembership?.role ?? null,
 			isMember: !!myTeamMembership,
 			orgRole: orgMembership.role,
+			hasPendingRequest: !!myPendingRequest,
+			myPendingRequestId: myPendingRequest?.id ?? null,
 		}
 	})
 
@@ -567,6 +584,335 @@ export const leaveTeam = createServerFn({ method: "POST" })
 					eq(teamMember.userId, sessionUser.id)
 				)
 			)
+
+		return { success: true }
+	})
+
+// ============================================================================
+// Team Join Request Functions
+// ============================================================================
+
+/**
+ * Request to join a team
+ */
+const requestToJoinTeamSchema = z.object({
+	teamId: z.string(),
+	message: z.string().max(500).optional(),
+})
+
+export const requestToJoinTeam = createServerFn({ method: "POST" })
+	.inputValidator((data: unknown) => requestToJoinTeamSchema.parse(data))
+	.handler(async ({ data }) => {
+		const sessionUser = await getSessionUser()
+		if (!sessionUser) {
+			throw new Error("Unauthorized")
+		}
+
+		const t = await db.query.team.findFirst({
+			where: eq(team.id, data.teamId),
+		})
+
+		if (!t) {
+			throw new Error("Team not found")
+		}
+
+		// Check org membership
+		const orgMembership = await db.query.organizationMember.findFirst({
+			where: and(
+				eq(organizationMember.organizationId, t.organizationId),
+				eq(organizationMember.userId, sessionUser.id)
+			),
+		})
+
+		if (!orgMembership) {
+			throw new Error("Must be an organization member to request joining teams")
+		}
+
+		// Check if already a team member
+		const existingMember = await db.query.teamMember.findFirst({
+			where: and(
+				eq(teamMember.teamId, data.teamId),
+				eq(teamMember.userId, sessionUser.id)
+			),
+		})
+
+		if (existingMember) {
+			throw new Error("Already a team member")
+		}
+
+		// Check if there's already a pending request
+		const existingRequest = await db.query.teamJoinRequest.findFirst({
+			where: and(
+				eq(teamJoinRequest.teamId, data.teamId),
+				eq(teamJoinRequest.userId, sessionUser.id),
+				eq(teamJoinRequest.status, "pending")
+			),
+		})
+
+		if (existingRequest) {
+			throw new Error("You already have a pending request to join this team")
+		}
+
+		await db.insert(teamJoinRequest).values({
+			id: nanoid(),
+			teamId: data.teamId,
+			userId: sessionUser.id,
+			message: data.message,
+			status: "pending",
+		})
+
+		return { success: true }
+	})
+
+/**
+ * Get pending join requests for a team (for admins/leads)
+ */
+export const getTeamJoinRequests = createServerFn({ method: "GET" })
+	.inputValidator((data: unknown) => z.string().parse(data))
+	.handler(async ({ data: teamId }) => {
+		const sessionUser = await getSessionUser()
+		if (!sessionUser) {
+			throw new Error("Unauthorized")
+		}
+
+		const t = await db.query.team.findFirst({
+			where: eq(team.id, teamId),
+		})
+
+		if (!t) {
+			throw new Error("Team not found")
+		}
+
+		// Check org admin or team lead permission
+		const orgMembership = await db.query.organizationMember.findFirst({
+			where: and(
+				eq(organizationMember.organizationId, t.organizationId),
+				eq(organizationMember.userId, sessionUser.id)
+			),
+		})
+
+		const myTeamMembership = await db.query.teamMember.findFirst({
+			where: and(
+				eq(teamMember.teamId, teamId),
+				eq(teamMember.userId, sessionUser.id)
+			),
+		})
+
+		const isOrgAdmin = orgMembership?.role === "owner" || orgMembership?.role === "admin"
+		const isTeamLead = myTeamMembership?.role === "lead"
+
+		if (!isOrgAdmin && !isTeamLead) {
+			throw new Error("Permission denied")
+		}
+
+		const requests = await db.query.teamJoinRequest.findMany({
+			where: and(
+				eq(teamJoinRequest.teamId, teamId),
+				eq(teamJoinRequest.status, "pending")
+			),
+			with: {
+				user: true,
+			},
+			orderBy: (t, { desc }) => [desc(t.createdAt)],
+		})
+
+		return requests
+	})
+
+/**
+ * Get my pending join requests
+ */
+export const getMyJoinRequests = createServerFn({ method: "GET" }).handler(async () => {
+	const sessionUser = await getSessionUser()
+	if (!sessionUser) {
+		throw new Error("Unauthorized")
+	}
+
+	const requests = await db.query.teamJoinRequest.findMany({
+		where: eq(teamJoinRequest.userId, sessionUser.id),
+		with: {
+			team: {
+				with: {
+					organization: true,
+				},
+			},
+		},
+		orderBy: (t, { desc }) => [desc(t.createdAt)],
+	})
+
+	return requests
+})
+
+/**
+ * Approve a join request
+ */
+const approveJoinRequestSchema = z.object({
+	requestId: z.string(),
+	role: z.enum(["lead", "member"]).default("member"),
+})
+
+export const approveJoinRequest = createServerFn({ method: "POST" })
+	.inputValidator((data: unknown) => approveJoinRequestSchema.parse(data))
+	.handler(async ({ data }) => {
+		const sessionUser = await getSessionUser()
+		if (!sessionUser) {
+			throw new Error("Unauthorized")
+		}
+
+		const request = await db.query.teamJoinRequest.findFirst({
+			where: eq(teamJoinRequest.id, data.requestId),
+			with: {
+				team: true,
+			},
+		})
+
+		if (!request) {
+			throw new Error("Request not found")
+		}
+
+		if (request.status !== "pending") {
+			throw new Error("Request has already been processed")
+		}
+
+		// Check org admin or team lead permission
+		const orgMembership = await db.query.organizationMember.findFirst({
+			where: and(
+				eq(organizationMember.organizationId, request.team.organizationId),
+				eq(organizationMember.userId, sessionUser.id)
+			),
+		})
+
+		const myTeamMembership = await db.query.teamMember.findFirst({
+			where: and(
+				eq(teamMember.teamId, request.teamId),
+				eq(teamMember.userId, sessionUser.id)
+			),
+		})
+
+		const isOrgAdmin = orgMembership?.role === "owner" || orgMembership?.role === "admin"
+		const isTeamLead = myTeamMembership?.role === "lead"
+
+		if (!isOrgAdmin && !isTeamLead) {
+			throw new Error("Permission denied")
+		}
+
+		// Update request status
+		await db
+			.update(teamJoinRequest)
+			.set({
+				status: "approved",
+				reviewedById: sessionUser.id,
+				reviewedAt: new Date(),
+				updatedAt: new Date(),
+			})
+			.where(eq(teamJoinRequest.id, data.requestId))
+
+		// Add user as team member
+		await db.insert(teamMember).values({
+			id: nanoid(),
+			teamId: request.teamId,
+			userId: request.userId,
+			role: data.role,
+		})
+
+		return { success: true }
+	})
+
+/**
+ * Reject a join request
+ */
+const rejectJoinRequestSchema = z.object({
+	requestId: z.string(),
+	note: z.string().max(500).optional(),
+})
+
+export const rejectJoinRequest = createServerFn({ method: "POST" })
+	.inputValidator((data: unknown) => rejectJoinRequestSchema.parse(data))
+	.handler(async ({ data }) => {
+		const sessionUser = await getSessionUser()
+		if (!sessionUser) {
+			throw new Error("Unauthorized")
+		}
+
+		const request = await db.query.teamJoinRequest.findFirst({
+			where: eq(teamJoinRequest.id, data.requestId),
+			with: {
+				team: true,
+			},
+		})
+
+		if (!request) {
+			throw new Error("Request not found")
+		}
+
+		if (request.status !== "pending") {
+			throw new Error("Request has already been processed")
+		}
+
+		// Check org admin or team lead permission
+		const orgMembership = await db.query.organizationMember.findFirst({
+			where: and(
+				eq(organizationMember.organizationId, request.team.organizationId),
+				eq(organizationMember.userId, sessionUser.id)
+			),
+		})
+
+		const myTeamMembership = await db.query.teamMember.findFirst({
+			where: and(
+				eq(teamMember.teamId, request.teamId),
+				eq(teamMember.userId, sessionUser.id)
+			),
+		})
+
+		const isOrgAdmin = orgMembership?.role === "owner" || orgMembership?.role === "admin"
+		const isTeamLead = myTeamMembership?.role === "lead"
+
+		if (!isOrgAdmin && !isTeamLead) {
+			throw new Error("Permission denied")
+		}
+
+		await db
+			.update(teamJoinRequest)
+			.set({
+				status: "rejected",
+				reviewedById: sessionUser.id,
+				reviewedAt: new Date(),
+				reviewNote: data.note,
+				updatedAt: new Date(),
+			})
+			.where(eq(teamJoinRequest.id, data.requestId))
+
+		return { success: true }
+	})
+
+/**
+ * Cancel a pending join request (by the requester)
+ */
+export const cancelJoinRequest = createServerFn({ method: "POST" })
+	.inputValidator((data: unknown) => z.string().parse(data))
+	.handler(async ({ data: requestId }) => {
+		const sessionUser = await getSessionUser()
+		if (!sessionUser) {
+			throw new Error("Unauthorized")
+		}
+
+		const request = await db.query.teamJoinRequest.findFirst({
+			where: eq(teamJoinRequest.id, requestId),
+		})
+
+		if (!request) {
+			throw new Error("Request not found")
+		}
+
+		if (request.userId !== sessionUser.id) {
+			throw new Error("Permission denied")
+		}
+
+		if (request.status !== "pending") {
+			throw new Error("Can only cancel pending requests")
+		}
+
+		await db.delete(teamJoinRequest).where(eq(teamJoinRequest.id, requestId))
 
 		return { success: true }
 	})

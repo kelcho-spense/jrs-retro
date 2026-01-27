@@ -127,6 +127,22 @@ export const teamMember = sqliteTable("team_member", {
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 })
 
+export const teamJoinRequestStatusEnum = ["pending", "approved", "rejected"] as const
+export type TeamJoinRequestStatus = (typeof teamJoinRequestStatusEnum)[number]
+
+export const teamJoinRequest = sqliteTable("team_join_request", {
+	id: text("id").primaryKey(),
+	teamId: text("team_id").notNull().references(() => team.id, { onDelete: "cascade" }),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+	status: text("status", { enum: teamJoinRequestStatusEnum }).notNull().default("pending"),
+	message: text("message"), // Optional message from the requester
+	reviewedById: text("reviewed_by_id").references(() => user.id),
+	reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+	reviewNote: text("review_note"), // Optional note from the reviewer
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+})
+
 // ============================================================================
 // Template Tables
 // ============================================================================
@@ -214,6 +230,7 @@ export const userRelations = relations(user, ({ many }) => ({
 	accounts: many(account),
 	organizationMemberships: many(organizationMember),
 	teamMemberships: many(teamMember),
+	teamJoinRequests: many(teamJoinRequest),
 	createdRetros: many(retrospective),
 	retroParticipations: many(retroParticipant),
 	cards: many(card),
@@ -244,12 +261,19 @@ export const organizationMemberRelations = relations(organizationMember, ({ one 
 export const teamRelations = relations(team, ({ one, many }) => ({
 	organization: one(organization, { fields: [team.organizationId], references: [organization.id] }),
 	members: many(teamMember),
+	joinRequests: many(teamJoinRequest),
 	retrospectives: many(retrospective),
 }))
 
 export const teamMemberRelations = relations(teamMember, ({ one }) => ({
 	team: one(team, { fields: [teamMember.teamId], references: [team.id] }),
 	user: one(user, { fields: [teamMember.userId], references: [user.id] }),
+}))
+
+export const teamJoinRequestRelations = relations(teamJoinRequest, ({ one }) => ({
+	team: one(team, { fields: [teamJoinRequest.teamId], references: [team.id] }),
+	user: one(user, { fields: [teamJoinRequest.userId], references: [user.id] }),
+	reviewedBy: one(user, { fields: [teamJoinRequest.reviewedById], references: [user.id] }),
 }))
 
 export const templateRelations = relations(template, ({ one, many }) => ({
