@@ -89,11 +89,3 @@ export function generateAvatarUrl(
 
 	return `${baseUrl}?${params.toString()}`
 }
-
-/**
- * Generate a random seed for avatar creation.
- * Uses crypto.randomUUID for uniqueness.
- */
-export function generateAvatarSeed(): string {
-	return crypto.randomUUID()
-}
