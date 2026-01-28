@@ -14,20 +14,31 @@ const config = defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      external: [
+        'node:stream',
+        'node:stream/web',
+        'node:async_hooks',
+      ],
+    },
+  },
   plugins: [
     devtools(),
-    nitro(),
+    tailwindcss(),
     // this is the plugin that enables path aliases
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
-    tailwindcss(),
-    tanstackStart(),
+    tanstackStart({
+      srcDirectory: 'src',
+    }),
     viteReact({
       babel: {
         plugins: ['babel-plugin-react-compiler'],
       },
     }),
+    nitro(),
   ],
 })
 
