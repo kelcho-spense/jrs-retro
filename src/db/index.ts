@@ -10,6 +10,8 @@ function getDb() {
 	if (!_db) {
 		const client = createClient({
 			url: process.env.DATABASE_URL || "file:local.db",
+			// Turso auth token for cloud database (required for Vercel deployment)
+			authToken: process.env.DATABASE_AUTH_TOKEN,
 		})
 		_db = drizzle(client, { schema })
 	}
